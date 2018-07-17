@@ -28,6 +28,37 @@ def getEmail(eventdoi):
     
     for i in soup.find_all(href=re.compile("mailto")):
         email = i.string
+    if email == '':
+        #print ('Email not found in webpage..!')
+        email = getEmailScihub(doi)
+
+    return email
+
+
+def getEmailScihub(eventdoi):
+    doi = eventdoi
+    email = ''
+
+    url = 'https://sci-hub.tw/' + doi
+    page = urlopen(url)
+    html = page.read()
+    soup = BeautifulSoup(html, 'lxml')
+    #get the src attribute from the iframe tag
+    pdfurl = soup.find("iframe").get("src")
+    #print(pdfurl)
+
+    r = requests.get(pdfurl, stream=True)
+    f = io.BytesIO(r.content)
+    reader = PdfFileReader(f)
+    contents = reader.getPage(0).extractText().split('\n')
+    f.close()
+    
+    matching = [s for s in contents if "@" in s]
+    if len(matching) != 0:
+        match_list = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", ''.join(matching))
+        if len(match_list) > 0:
+            email = ''.join(match_list)
+        #print(email)
 
     return email
 
